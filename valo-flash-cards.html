@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Valorant 3D Agent Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --paper: #e8e4da; --ink: #060a2c; --a: #ff4a1f; --b: #1730ff; --wash: #f2efe7; }
+  body[data-v="yoru"] { --a: #ff4a1f; --b: #1730ff; --wash: #f1eee6; }
+  body[data-v="neon"] { --a: #f7ee5a; --b: #7a3df0; --wash: #e9e8f3; }
+  body[data-v="both"] { --a: #ff4a1f; --b: #7a3df0; --wash: #eceaf0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--paper); color: var(--ink); overflow: hidden;
+    -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; transition: background .5s; }
+
+  /* cut-paper backdrop that re-colours per view */
+  .paper { position: fixed; inset: 0; z-index: 0; background: radial-gradient(80% 70% at 50% 55%, #fff 0, var(--wash) 55%, var(--paper) 100%); transition: background .5s; }
+  .paper i { position: absolute; transition: background .5s, transform .6s cubic-bezier(.2, .8, .2, 1); }
+  .paper .p1 { left: -6vw; bottom: -4vh; width: 46vw; height: 62vh; background: var(--b); clip-path: polygon(0 28%, 100% 0, 62% 100%, 0 100%); opacity: .94; }
+  .paper .p2 { left: -6vw; bottom: -4vh; width: 46vw; height: 62vh; background: var(--ink); clip-path: polygon(0 28%, 100% 0, 100% 3%, 0 31%); transform: translate(10px, 12px); }
+  .paper .p3 { right: -5vw; top: -6vh; width: 40vw; height: 54vh; background: var(--a); clip-path: polygon(100% 0, 100% 100%, 44% 72%, 62% 54%, 0 0); opacity: .95; }
+  body[data-v="both"] .paper .p3 { background: #f7ee5a; }
+  body[data-v="both"] .paper .p1 { background: linear-gradient(120deg, #1730ff, #7a3df0); }
+
+  header { position: relative; z-index: 3; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 22px 32px 6px; }
+  .mark { font: 800 13px/1 'DM Sans', sans-serif; letter-spacing: .26em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .mark i { width: 11px; height: 11px; background: var(--ink); transform: rotate(45deg); }
+  .mark em { font-style: normal; opacity: .5; }
+
+  nav { display: flex; gap: 12px; padding: 0 8px 10px 0; }
+  nav button { --s: 0; position: relative; border: 0; background: none; cursor: pointer; font: inherit; color: var(--ink);
+    height: 54px; padding: 0 30px 0 26px; transform: translateY(calc(var(--s) * -3px)); transition: transform .2s; }
+  nav button .sh, nav button .face { position: absolute; inset: 0; clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); }
+  nav button .sh { background: var(--a); transform: translate(7px, 8px); opacity: calc(var(--s)); transition: opacity .2s; }
+  nav button .face { background: rgba(255, 255, 255, .6); box-shadow: inset 0 0 0 0 transparent; transition: background .25s; }
+  nav button:hover .face { background: #fff; }
+  nav button[aria-selected="true"] { --s: 1; color: #fff; }
+  nav button[aria-selected="true"] .face { background: var(--ink); }
+  nav button span { position: relative; display: flex; align-items: baseline; gap: 10px; height: 100%; align-items: center; }
+  nav button b { font: 700 10px/1 'DM Sans', sans-serif; letter-spacing: .16em; opacity: .55; }
+  nav button strong { font: 900 30px/1 'Big Shoulders Display', Impact, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+  nav button:focus-visible { outline: 3px solid var(--b); outline-offset: 4px; }
+
+  .dl { justify-self: end; display: flex; gap: 18px; font: 700 10.5px/1 'DM Sans', sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+  .dl a { color: var(--ink); text-decoration: none; padding: 7px 0; border-bottom: 2px solid var(--ink); opacity: .75; transition: opacity .2s, border-color .2s; }
+  .dl a:hover { opacity: 1; border-color: var(--a); }
+
+  main { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; justify-content: center; gap: 2vw; padding: 4px 24px 18px; }
+  main iframe { border: 0; background: transparent; flex: 1 1 0; min-width: 0; height: 100%; max-width: 720px; animation: in .5s cubic-bezier(.2, .8, .2, 1) both; color-scheme: normal; }
+  main iframe:nth-child(2) { animation-delay: .08s; }
+  main.two iframe:first-child { translate: 7.5% 0; } main.two iframe:last-child { translate: -7.5% 0; }   /* pulls the pair 15% closer */
+  main.one iframe { max-width: 760px; }
+  @keyframes in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 860px) {
+    header { grid-template-columns: 1fr; justify-items: center; padding: 16px 12px 0; gap: 10px; }
+    .mark, .dl { display: none; }
+    nav { gap: 6px; padding-right: 0; } nav button { padding: 0 20px 0 16px; height: 46px; } nav button strong { font-size: 24px; } nav button b { display: none; }
+    body { overflow-y: auto; }
+    main.two { flex-direction: column; align-items: center; padding: 4px 8px 24px; }
+    main.two iframe { flex: none; width: 100%; height: 92vh;  translate: none !important; }
+  }
+  @media (prefers-reduced-motion: reduce) { main iframe { animation: none; } }
+</style>
+</head>
+<body data-v="yoru">
+<div class="paper"><i class="p1"></i><i class="p2"></i><i class="p3"></i></div>
+<header>
+  <div class="mark"><i></i>Agent cards <em>/ 3D</em></div>
+  <nav role="tablist" aria-label="Choose card">
+    <button role="tab" data-v="yoru" aria-selected="true"><div class="sh"></div><div class="face"></div><span><b>01</b><strong>Yoru</strong></span></button>
+    <button role="tab" data-v="neon" aria-selected="false"><div class="sh"></div><div class="face"></div><span><b>02</b><strong>Neon</strong></span></button>
+    <button role="tab" data-v="both" aria-selected="false"><div class="sh"></div><div class="face"></div><span><b>01+02</b><strong>Both</strong></span></button>
+  </nav>
+  <div class="dl" id="dl"></div>
+</header>
+<main id="stage" class="one"></main>
+
+<script>
+const VIEWS = {
+  yoru: ['yoru'],
+  neon: ['neon'],
+  both: ['yoru', 'neon'],
+};
+const stage = document.getElementById('stage'), tabs = [...document.querySelectorAll('nav button')], dl = document.getElementById('dl');
+const frame = a => { const f = document.createElement('iframe'); f.title = a + ' card'; f.setAttribute('allowtransparency', 'true');
+  f.src = `${a}.html?fit=inset&inset=.88&bare`; return f; };
+function show(v, push) {
+  if (!VIEWS[v]) v = 'yoru';
+  document.body.dataset.v = v;
+  tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.v === v));
+  stage.replaceChildren(...VIEWS[v].map(frame));
+  stage.className = VIEWS[v].length > 1 ? 'two' : 'one';
+  dl.innerHTML = VIEWS[v].map(a => `<a href="out/${a}-card-inset.gif" download>${VIEWS[v].length > 1 ? a + ' ' : ''}GIF &darr;</a>`).join('');
+  if (push) history.replaceState(null, '', '#' + v);
+  document.title = ({ yoru: 'Yoru', neon: 'Neon', both: 'Yoru + Neon' })[v] + ' — 3D Agent Cards';
+}
+tabs.forEach(t => t.addEventListener('click', () => show(t.dataset.v, true)));
+addEventListener('keydown', e => { const i = '123'.indexOf(e.key); if (i > -1 && !e.metaKey && !e.ctrlKey) show(tabs[i].dataset.v, true); });
+addEventListener('hashchange', () => show(location.hash.slice(1)));
+show(location.hash.slice(1));
+</script>
+</body>
+</html>

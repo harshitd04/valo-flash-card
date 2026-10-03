@@ -1,0 +1,6 @@
+﻿# Rendered GIFs and frame dumps (~112 MB) - regenerate with: PAGE=yoru|neon node render-gif.mjs both
+out/
+node_modules/
+*.log
+Thumbs.db
+.DS_Store

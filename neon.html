@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neon — 3D Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #060a38; --blue: #2745ff; --violet: #7a3df0; --yellow: #f7ee5a; --cream: #f6f2a8; --cyan: #6be3ff; --mag: #ff49cf; --paper: #dcdcea; --r: 34px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--paper); }
+  body { font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body.full { --r: 0px; }
+  html:has(body.bare), body.bare { background: transparent; } body.bare #backdrop { display: none; }
+  #backdrop { position: fixed; inset: 0; background: radial-gradient(90% 70% at 50% 45%, #e9e9f4, var(--paper) 70%, #c9c9dd); }
+
+  #stage { position: absolute; left: 50%; top: 50%; width: 540px; height: 960px; transform-origin: 50% 50%; perspective: 1800px; }
+  #card { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .L { position: absolute; inset: 0; pointer-events: none; }
+  .clip { border-radius: var(--r); overflow: hidden; }
+  body.full .cardshadow { display: none; }
+  .cardshadow { border-radius: var(--r); box-shadow: 0 34px 60px -10px rgba(30, 24, 70, .4), 0 6px 14px rgba(30, 24, 70, .2); }
+
+  .bg { background: #0b1470; }
+  .bg canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,10,56,0) 55%, rgba(6,10,56,.85) 88%); }
+  .streaks svg, .bolt svg, .fx svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .name {
+    position: absolute; left: 0; right: 0; top: 112px; text-align: center; white-space: nowrap;
+    font: 900 236px/1 'Big Shoulders Display', Impact, sans-serif; letter-spacing: .01em; color: var(--nm, #f6f2a8);
+    text-shadow: 7px 8px 0 var(--violet);
+  }
+  .shards canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .figwrap { left: 146px; top: 112px; width: 248px; height: 600px; position: absolute; pointer-events: none; }
+  .fig { position: absolute; inset: 0; }
+  .fig img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .echo { position: absolute; inset: 0; background: #6be3ff; mix-blend-mode: screen; opacity: 0;
+    -webkit-mask: url(assets/neon.png) center / 100% 100% no-repeat; mask: url(assets/neon.png) center / 100% 100% no-repeat; }
+  #ultwrap { position: absolute; left: -146px; top: -112px; width: 540px; height: 960px; display: none; pointer-events: none; transform-origin: 300px 420px; }
+  #ultfig { position: absolute; left: 65px; top: 118px; width: 389px; height: 578px; display: block; }
+  .tags span { text-shadow: 0 1px 8px rgba(6,10,56,.85); }
+  .glow { position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%; mix-blend-mode: screen; opacity: 0; filter: blur(5px);
+    background: radial-gradient(closest-side, #fff, rgba(107,227,255,.8) 40%, rgba(39,69,255,0) 100%); }
+  .glow.hair { background: radial-gradient(closest-side, #fffbc0, rgba(247,238,90,.8) 40%, rgba(247,238,90,0) 100%); width: 170px; height: 170px; margin: -85px 0 0 -85px; }
+
+  .tags { font: 700 11px/1 'DM Sans', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--cream); }
+  .tags span { position: absolute; top: 34px; display: flex; align-items: center; gap: 9px; }
+  .tags .l { left: 28px; } .tags .r { right: 28px; }
+  .tags i { width: 9px; height: 9px; background: var(--yellow); transform: rotate(45deg); }
+  .tags svg { width: 15px; height: 15px; fill: var(--yellow); }
+
+  .plate { left: 0; right: 0; top: 716px; bottom: 0; position: absolute; background: var(--ink); border-radius: 0 0 var(--r) var(--r);
+    clip-path: polygon(0 14px, 9% 2px, 15% 18px, 29% 0, 37% 12px, 52% 3px, 58% 16px, 73% 0, 80% 10px, 91% 2px, 100% 12px, 100% 100%, 0 100%); }
+  .abil { position: absolute; left: 24px; right: 24px; top: 750px; bottom: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; height: 88px; }
+  .tile { --a: 0; position: relative; cursor: pointer; pointer-events: auto; transform: translateY(calc(var(--a) * -9px)) scale(calc(1 + var(--a) * .045)); }
+  .tile .sh, .tile .face { position: absolute; inset: 0; clip-path: polygon(17px 0, 100% 0, calc(100% - 17px) 100%, 0 100%); }
+  .tile .sh { background: var(--yellow); opacity: var(--a); transform: translate(calc(var(--a) * 6px), calc(var(--a) * 8px)); }
+  .tile .face { color: var(--ic); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    filter: saturate(calc(.8 + var(--a) * .2)) brightness(calc(.72 + var(--a) * .28)); }
+  .tile svg { width: 52px; height: 52px; fill: currentColor; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; margin-top: 4px; }
+  .tile .nm { font: 700 9.5px/1 'DM Sans', sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+  .tile .kc { position: absolute; left: 20px; top: 8px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; background: rgba(6,10,56,.9); color: #fff; font: 700 10px/1 'DM Sans', sans-serif; border-radius: 3px; }
+  .tile.x .kc { background: var(--yellow); color: var(--ink); }
+  .desc { margin-top: 16px; }
+  .desc .row { display: flex; align-items: center; gap: 10px; height: 34px; }
+  .desc h2 { white-space: nowrap; font: 800 34px/1 'Big Shoulders Display', sans-serif; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+  .chip { font: 700 9.5px/1 'DM Sans', sans-serif; letter-spacing: .14em; padding: 4px 7px; background: var(--cream); color: var(--ink); border-radius: 3px; }
+  .chip.ult { background: var(--yellow); } .chip.live { background: var(--cyan); }
+  .bar { margin-left: auto; width: 96px; flex: none; height: 6px; background: rgba(255,255,255,.14); border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--yellow); transform-origin: 0 50%; }
+  .desc p { margin-top: 6px; font: 500 12.5px/1.45 'DM Sans', sans-serif; color: #b9c3f7; max-width: 470px; }
+
+  .oc { mix-blend-mode: screen; opacity: 0; border-radius: var(--r); }
+  .grain { z-index: 5; mix-blend-mode: overlay; opacity: .34; border-radius: var(--r);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  .flash { background: #fff; opacity: 0; border-radius: var(--r); }
+</style>
+</head>
+<body>
+<div id="backdrop"></div>
+<div id="stage">
+  <div id="card">
+    <div class="L cardshadow" id="Lshadow"></div>
+    <div class="L clip bg" id="Lbg"><canvas id="facets" width="1080" height="1920"></canvas></div>
+    <div class="L clip streaks" id="Lstreaks"><svg id="streaksvg" viewBox="0 0 540 960"></svg></div>
+    <div class="L clip bolt" id="Lbolt"><svg id="boltsvg" viewBox="0 0 540 960"></svg></div>
+    <div class="L oc" id="oc"></div>
+    <div class="L clip" id="Lbeam"><svg id="beam" viewBox="0 0 540 960" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible"></svg></div>
+    <div class="L clip" id="Lname"><div class="name" id="name">NEON</div></div>
+    <div class="L clip shards" id="Lshards"><canvas id="gl"></canvas></div>
+
+    <div class="L tags" id="Ltags"><span class="l"><i></i>Philippines</span><span class="r">Duelist<svg viewBox="0 0 16 16"><path d="M1 2l6 6-6 6V2zm7 0l6 6-6 6V2z"/></svg></span></div>
+
+    <div class="figwrap" id="figwrap">
+      <div class="fig" id="fig"><img src="assets/neon.png" alt="Neon"></div>
+      <div id="ultwrap"><img id="ultfig" src="assets/neon_ult.png" alt=""></div>
+      <div class="glow hair" id="gh" style="left:50%;top:5%"></div>
+      <div class="glow" id="gr"></div>
+    </div>
+    <div class="L clip fx" id="Lfx"><svg id="fxsvg" viewBox="0 0 540 960">
+      <defs><filter id="bl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs><g id="fxg"></g></svg></div>
+
+    <div class="L" id="Lplate"><div class="plate"></div></div>
+    <div class="abil" id="Labil">
+      <div class="tiles" id="tiles"></div>
+      <div class="desc" id="desc">
+        <div class="row"><h2 id="dn"></h2><span class="chip" id="dk"></span><span class="chip ult" id="du">ULTIMATE</span><span class="chip live" id="dl">ACTIVE</span><div class="bar" id="bar"><i></i></div></div>
+        <p id="dt"></p>
+      </div>
+    </div>
+    <div class="L grain"></div>
+    <div class="L flash" id="flash"></div>
+  </div>
+</div>
+
+<script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from './lib/RoomEnvironment.js';
+
+const W = 540, H = 960;
+const q = new URLSearchParams(location.search);
+const MODE = q.get('fit') === 'full' ? 'full' : 'inset';
+const TILT = MODE === 'full' ? .5 : 1;
+const INSET = parseFloat(q.get('inset') || '0.82');
+const FROZEN = q.has('t') ? parseFloat(q.get('t')) : null;
+document.body.classList.toggle('full', MODE === 'full');
+document.body.classList.toggle('bare', q.has('bare'));
+
+const TAU = Math.PI * 2;
+const cl = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ss = (a, b, t) => { const x = cl((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+const bump = (c, w, t) => Math.max(0, 1 - Math.abs(t - c) / w);
+const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const $ = id => document.getElementById(id);
+
+/* ---------- timeline (seconds, loops) ---------- */
+const L = 10.6;
+const T = { C: 0, Q: 1.4, E: 2.8, X: 4.2, CHARGE: 4.2, FIRE: 5.2, BEAM_END: 8.0 };
+
+/* ---------- backdrop: shattered lightning slivers ---------- */
+(function paint() {
+  const c = $('facets'), g = c.getContext('2d'), s = 2, r = rng(31);
+  g.scale(s, s);
+  const bgG = g.createRadialGradient(270, 380, 20, 270, 420, 640);
+  bgG.addColorStop(0, '#2e4cff'); bgG.addColorStop(.45, '#1427c8'); bgG.addColorStop(1, '#070c56');
+  g.fillStyle = bgG; g.fillRect(0, 0, W, H);
+  const pal = ['#3a55ff', '#5b3be8', '#1a2bd0', '#8d6bff', '#a9b4ff'];
+  for (let i = 0; i < 30; i++) {
+    const ang = (-62 + (r() - .5) * 18) * Math.PI / 180, len = 280 + r() * 620, w = 16 + r() * 80;
+    const x0 = -120 + r() * 780, y0 = -120 + r() * 1180, dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx;
+    const pts = [[x0, y0]];
+    for (let k = 1; k <= 3; k++) { const u = k / 4, wv = w * Math.sin(Math.PI * u) * (.7 + r() * .6); pts.push([x0 + dx * len * u + nx * wv, y0 + dy * len * u + ny * wv]); }
+    pts.push([x0 + dx * len, y0 + dy * len]);
+    for (let k = 3; k >= 1; k--) { const u = k / 4, wv = w * Math.sin(Math.PI * u) * (.7 + r() * .6); pts.push([x0 + dx * len * u - nx * wv, y0 + dy * len * u - ny * wv]); }
+    g.fillStyle = pal[Math.floor(r() * pal.length)]; g.globalAlpha = .16 + r() * .3;
+    g.beginPath(); pts.forEach((p, k) => k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.fill();
+  }
+  g.globalAlpha = 1;
+  g.strokeStyle = 'rgba(247,238,90,.55)'; g.lineWidth = 2.5; g.lineJoin = 'miter';
+  for (let i = 0; i < 9; i++) {
+    let x = r() * 540, y = -20 + r() * 300; g.beginPath(); g.moveTo(x, y);
+    for (let k = 0; k < 7; k++) { x += (r() - .5) * 70; y += 40 + r() * 70; g.lineTo(x, y); }
+    g.stroke();
+  }
+})();
+
+/* ---------- speed streaks (loop-safe) ---------- */
+const streakEls = [];
+(function () {
+  const r = rng(3); let html = '';
+  for (let i = 0; i < 16; i++) { streakEls.push({ x: r() * 900, y: 40 + r() * 800, l: 80 + r() * 200, k: 1 + Math.floor(r() * 3), o: .12 + r() * .25 });
+    html += `<line id="sk${i}" stroke="#fff" stroke-width="${(1 + r() * 2.2).toFixed(1)}" stroke-linecap="round"/>`; }
+  $('streaksvg').innerHTML = `<g transform="rotate(-18 270 480)">${html}</g>`;
+})();
+
+/* ---------- the giant bolt behind her ---------- */
+$('boltsvg').innerHTML = `
+  <defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbb4"/><stop offset=".5" stop-color="#f7ee5a"/><stop offset="1" stop-color="#ffc83a"/></linearGradient></defs>
+  <polygon id="bshadow" points="372,330 196,580 276,580 150,880 436,540 336,540 478,330" transform="translate(11 13)" fill="#4a24c0"/>
+  <polygon id="bmain" points="372,330 196,580 276,580 150,880 436,540 336,540 478,330" fill="url(#bg1)"/>
+  <polygon points="0,0 190,0 90,120 150,170 0,230" fill="#7a3df0" opacity=".95"/>
+  <polygon points="540,420 540,600 456,566 494,508 440,462" fill="#ff49cf"/>`;
+
+/* ---------- abilities ---------- */
+const AB = [
+  { n: 'Fast Lane', k: 'C', nm: 'Fast Lane', fc: '#6be3ff', ic: '#04115a', d: 'Fire two energy lines that rise into walls, blocking vision and shocking anyone who crosses them.',
+    svg: `<polygon stroke="none" points="3,44 11,44 15,6 7,6"/><polygon stroke="none" points="33,44 41,44 45,6 37,6"/><polygon stroke="none" points="24,5 33,19 27,19 27,42 21,42 21,19 15,19"/>` },
+  { n: 'Relay Bolt', k: 'Q', nm: 'Relay Bolt', fc: '#f7ee5a', ic: '#1a0f66', d: 'Throw a bolt that bounces once, then electrifies the ground to concuss anyone caught in it.',
+    svg: `<polygon stroke="none" points="30,1 11,25 21,25 16,42 37,17 26,17"/><ellipse cx="24" cy="44" rx="17" ry="3.6" fill="none" stroke-width="2.6"/>` },
+  { n: 'High Gear', k: 'E', nm: 'High Gear', fc: '#9b5cff', ic: '#ffffff', d: 'Burst into a sprint, then slide mid-run with alt fire. Kills refill the energy.',
+    svg: `<polygon stroke="none" points="3,8 15,8 27,24 15,40 3,40 15,24"/><polygon stroke="none" points="19,8 31,8 43,24 31,40 19,40 31,24"/><rect stroke="none" x="2" y="22" width="8" height="4" rx="2" transform="translate(-0 0)"/>` },
+  { n: 'Overdrive', k: 'X', nm: 'Overdrive', fc: 'linear-gradient(160deg,#3150ff,#0c1468)', ic: '#f7ee5a', ult: true, d: 'Unleash full power: a lightning beam blasts from her hand while she moves faster and shoots true.',
+    svg: `<circle cx="24" cy="24" r="17" fill="none" stroke-width="3.4"/><polygon stroke="none" points="27,6 15,26 22,26 19,42 33,20 25,20"/><path fill="none" stroke-width="2.6" d="M24 0.5v3.5M24 44v3.5M0.5 24h3.5M44 24h3.5"/>` },
+];
+const tilesEl = $('tiles');
+AB.forEach((a, i) => {
+  const t = document.createElement('div'); t.className = 'tile' + (a.ult ? ' x' : ''); t.dataset.i = i; t.style.setProperty('--ic', a.ic);
+  t.innerHTML = `<div class="sh"></div><div class="face" style="background:${a.fc}"><div class="kc">${a.k}</div><svg viewBox="0 0 48 48">${a.svg}</svg><div class="nm">${a.nm}</div></div>`;
+  tilesEl.appendChild(t);
+});
+const tileEls = [...tilesEl.children];
+
+/* ---------- three.js: 3D lightning bolts ---------- */
+const canvas = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = .5;
+const camera = new THREE.PerspectiveCamera(30, W / H, .1, 50); camera.position.set(0, 0, 8);
+const root = new THREE.Group(); root.position.set(0, .18, 0); scene.add(root);
+const shape = new THREE.Shape();
+[[.1, 1], [-.5, -.1], [-.1, -.1], [-.3, -1], [.5, .15], [.1, .15], [.5, 1]].forEach((p, i) => i ? shape.lineTo(p[0], p[1]) : shape.moveTo(p[0], p[1]));
+shape.closePath();
+const boltGeo = new THREE.ExtrudeGeometry(shape, { depth: .1, bevelEnabled: true, bevelSize: .025, bevelThickness: .03, bevelSegments: 1 });
+boltGeo.center();
+const sr = rng(17), bolts = [];
+const COLS = [0xf7ee5a, 0xf7ee5a, 0x6be3ff, 0x9b5cff, 0xffffff];
+for (let i = 0; i < 16; i++) {
+  const side = i % 2 ? 1 : -1, col = COLS[i % COLS.length];
+  const m = new THREE.Mesh(boltGeo, new THREE.MeshStandardMaterial({ color: col, flatShading: true, metalness: .25, roughness: .35, emissive: col, emissiveIntensity: .45 }));
+  const sc = .06 + sr() * .15; m.scale.set(sc, sc, sc);
+  m.userData = { bx: side * (.62 + sr() * .6), by: -1.1 + sr() * 2.6, bz: -.6 + sr() * 1.2, ph: sr() * TAU, m: 1 + Math.floor(sr() * 3), tz: (sr() - .5) * 1.2, dir: sr() > .5 ? 1 : -1 };
+  root.add(m); bolts.push(m);
+}
+const sparks = (() => {
+  const n = 140, pos = new Float32Array(n * 3), seed = [], r = rng(5);
+  for (let i = 0; i < n; i++) seed.push({ x: (r() - .5) * 2.5, y0: r(), z: (r() - .5) * 1.4, k: 1 + Math.floor(r() * 3) });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ size: .04, color: 0xfff6a0, transparent: true, opacity: .9, depthWrite: false }));
+  root.add(p); return { g, seed, pos };
+})();
+const d1 = new THREE.DirectionalLight(0xfff8cc, 2.6); d1.position.set(-3, 4, 5); scene.add(d1);
+const d2 = new THREE.DirectionalLight(0x8b5cff, 2.2); d2.position.set(4, -1, 2); scene.add(d2);
+scene.add(new THREE.AmbientLight(0x3344aa, .7));
+
+/* ---------- layout / input ---------- */
+const stage = $('stage'), card = $('card');
+function fit() {
+  const scale = Math.min(innerWidth / W, innerHeight / H) * (MODE === 'full' ? 1.04 : INSET);
+  stage.style.transform = `translate(-50%,-50%) scale(${scale})`;
+  renderer.setPixelRatio(Math.min(3, (devicePixelRatio || 1) * Math.max(1, scale)));
+  renderer.setSize(W, H, false);
+  if (FROZEN !== null && typeof lastSel !== 'undefined') renderAt(FROZEN, true);
+}
+let px = 0, py = 0, hover = false, cx = 0, cy = 0, offset = 0;
+addEventListener('pointermove', e => { px = cl((e.clientX / innerWidth - .5) * 2, -1, 1); py = cl((e.clientY / innerHeight - .5) * 2, -1, 1); hover = true; });
+document.addEventListener('pointerleave', () => hover = false);
+const starts = [T.C, T.Q, T.E, T.X];
+tileEls.forEach((t, i) => t.addEventListener('click', () => { offset = starts[i] + .02 - performance.now() / 1000; }));
+
+/* ---------- lightning geometry ---------- */
+function zig(x0, y0, x1, y1, seg, amp, seed) {
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len; let p = `${x0.toFixed(1)},${y0.toFixed(1)}`;
+  for (let i = 1; i <= seg; i++) { const u = i / seg, j = i === seg ? 0 : (hash(seed + i * 7.3) - .5) * 2 * amp * Math.sin(Math.PI * u) ** .5;
+    p += ` ${(x0 + dx * u + nx * j).toFixed(1)},${(y0 + dy * u + ny * j).toFixed(1)}`; }
+  return p;
+}
+function clipRect(pts, x0, y0, x1, y1) {                                        // Sutherland-Hodgman: keep a polygon inside the card box
+  let P = pts.trim().split(' ').map(q => q.split(',').map(Number));
+  const edges = [[p => p[0] >= x0, (a, b) => [x0, a[1] + (b[1] - a[1]) * (x0 - a[0]) / (b[0] - a[0])]], [p => p[0] <= x1, (a, b) => [x1, a[1] + (b[1] - a[1]) * (x1 - a[0]) / (b[0] - a[0])]],
+    [p => p[1] >= y0, (a, b) => [a[0] + (b[0] - a[0]) * (y0 - a[1]) / (b[1] - a[1]), y0]], [p => p[1] <= y1, (a, b) => [a[0] + (b[0] - a[0]) * (y1 - a[1]) / (b[1] - a[1]), y1]]];
+  for (const [inside, cut] of edges) { const out = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length];
+    if (inside(a)) { out.push(a); if (!inside(b)) out.push(cut(a, b)); } else if (inside(b)) out.push(cut(a, b)); } P = out; if (!P.length) break; }
+  return P.map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ');
+}
+const bolt = (pts, w, col, op, extra = '') => `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="miter" stroke-linecap="round" opacity="${op.toFixed(3)}" ${extra}/>`;
+const fxg = $('fxg');
+const Z = (id, v) => $(id).style.transform = `translateZ(${v}px)`;
+
+/* ---------- ult plate: the ult art takes over the card, revealed by a lightning wave from her hand ---------- */
+const HAND_IDLE = [352, 418];        // her idle hand (card px)
+const ULT_HAND = [388, 414];         // fingertips of the outstretched hand in the ult figure (card px)
+const poly = (pts, col, op, extra = '') => `<polygon points="${pts}" fill="${col}" opacity="${op.toFixed(3)}" ${extra}/>`;
+const circ = (x, y, r, col, op, extra = '') => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${col}" opacity="${op.toFixed(3)}" ${extra}/>`;
+const BODY_T = [[246, 330], [214, 470], [252, 640], [206, 236], [296, 520], [170, 560]];       // where lightning wraps her body (card px)
+const FIG0 = [146, 112];
+const uw = $('ultwrap'), beamEl = $('beam');
+const BEAM_A = .95;                  // direction of the beam from her palm (rad, 0 = right, +y = down)
+const BODY_ARC = [[270, 170], [215, 265], [235, 335], [200, 395], [205, 470], [165, 560], [120, 650], [100, 215], [330, 345], [300, 190]];
+
+/* ---------- one function draws the whole card at time t ---------- */
+let lastSel = -1;
+function renderAt(t, immediate) {
+  const sel = t < T.Q ? 0 : t < T.E ? 1 : t < T.X ? 2 : 3;
+  const gq = Math.floor(t * 24);
+  const CHARGE = ss(4.3, T.FIRE, t) * (1 - ss(8.0, 8.9, t));                  // energy gathering around her
+  const pre = ss(4.3, T.FIRE, t) * (1 - ss(T.FIRE, 5.3, t));
+  const ULT = ss(T.FIRE, 5.65, t) * (1 - ss(7.95, 8.45, t));                  // how much of the card the ult art covers
+  const BLAST = ss(5.4, 5.75, t) * (1 - ss(7.8, 8.3, t));                     // lightning on top of the art
+  const OC = ss(T.FIRE, 5.7, t) * (1 - ss(8.0, 8.8, t));
+  const ENER = Math.max(CHARGE, BLAST);
+  const F = Math.max(bump(5.22, .2, t) * .95, hash(gq + 4) > .88 ? pre * .3 : 0, bump(8.3, .14, t) * .5);
+
+  // card tilt + shake
+  const gx = hover ? px : Math.sin(TAU * t / L) * .65, gy = hover ? py : Math.cos(TAU * t / L * 2) * .35;
+  if (immediate) { cx = gx; cy = gy; } else { cx += (gx - cx) * .08; cy += (gy - cy) * .08; }
+  const shake = CHARGE * 2.5 + BLAST * 5;
+  card.style.transform = `translate(${(hash(gq) - .5) * shake}px,${(hash(gq + 9) - .5) * shake}px) rotateY(${cx * TILT * 12}deg) rotateX(${-cy * TILT * 8}deg)`;
+  Z('Lbg', 0); Z('Lstreaks', 8); Z('Lbolt', 14); Z('Lbeam', 24); Z('oc', 28); Z('Lname', 34); Z('Lshards', 46); Z('Ltags', 78); Z('Lfx', 92); Z('Lplate', 72); Z('Labil', 74);
+  const fy = Math.sin(TAU * t / L * 2) * 6;
+  $('figwrap').style.transform = `translateZ(${(64 + 30 * pre + 4 * ULT).toFixed(1)}px) translateY(${fy}px)`;
+
+  // idle figure: aura, tremble and recoil while the energy builds
+  const jit = ENER * 1.6 * (hash(gq + 21) - .5), rec = bump(5.3, .35, t) * 7;
+  $('fig').style.transform = `translate(${(jit - rec).toFixed(2)}px,0)`;
+  $('fig').style.filter = `drop-shadow(9px 13px 0 rgba(6,10,56,.55)) drop-shadow(0 0 ${(3 + 20 * CHARGE).toFixed(1)}px rgba(247,238,90,${(.12 + .6 * CHARGE).toFixed(2)})) brightness(${(1 + .06 * CHARGE).toFixed(3)})`;
+  $('fig').style.opacity = (1 - ss(.12, .5, ULT)).toFixed(3);
+  const pulse = .8 + .2 * Math.sin(t * 34);
+  const gr = $('gr'); gr.style.left = (HAND_IDLE[0] - FIG0[0] + jit - rec).toFixed(1) + 'px'; gr.style.top = (HAND_IDLE[1] - FIG0[1]).toFixed(1) + 'px';
+  gr.style.opacity = (CHARGE * (1 - ULT) * .7 * pulse).toFixed(3);
+  gr.style.transform = `scale(${(.4 + 1.5 * CHARGE).toFixed(2)})`;
+  $('gh').style.opacity = (CHARGE * (1 - ULT) * .8 * (hash(gq + 2) > .35 ? 1 : .4)).toFixed(3);
+
+  // backdrop world (visible around the wave front and when the art leaves)
+  $('facets').style.transform = `rotate(${(-5 * OC).toFixed(2)}deg) scale(${(1 + .16 * OC).toFixed(3)})`;
+  $('streaksvg').style.transform = `rotate(${(-5 * OC).toFixed(2)}deg) scale(${(1 + .16 * OC).toFixed(3)})`;
+  $('Lbg').style.filter = `hue-rotate(${(-14 * OC).toFixed(1)}deg) brightness(${(1 + OC * .08).toFixed(3)}) saturate(${(1 + OC * .25).toFixed(3)})`;
+  $('bmain').style.filter = `hue-rotate(${(-165 * OC).toFixed(1)}deg) brightness(${(1 + OC * .15).toFixed(3)})`;
+  streakEls.forEach((s2, i) => { const x = ((s2.x + (t / L) * s2.k * 900) % 900) - 180; const e = $('sk' + i);
+    e.setAttribute('x1', x); e.setAttribute('x2', x + s2.l * (1 + OC * 1.6)); e.setAttribute('y1', s2.y); e.setAttribute('y2', s2.y); e.setAttribute('opacity', (s2.o * (1 + OC * 1.6)).toFixed(3)); });
+
+  // the ult figure: same slot and height as the 3/4 figure; a lightning wave from her hand reveals it
+  const AH = [ULT_HAND[0], ULT_HAND[1] + fy];
+  const O = [HAND_IDLE[0], HAND_IDLE[1] + fy], R = ULT * 780;
+  if (ULT > .001) {
+    uw.style.display = 'block';
+    const m = `radial-gradient(circle at ${O[0].toFixed(1)}px ${(O[1] - fy).toFixed(1)}px, #000 ${R.toFixed(1)}px, transparent ${(R + 34).toFixed(1)}px)`;
+    uw.style.webkitMaskImage = m; uw.style.maskImage = m;
+    uw.style.transform = `translate(${(jit - rec).toFixed(2)}px,0) scale(${(1 + .035 * ss(5.5, 7.9, t)).toFixed(4)})`;
+    uw.style.filter = `drop-shadow(0 0 2px rgba(190,245,255,${(.9 * BLAST).toFixed(2)})) drop-shadow(0 0 ${(8 + 12 * BLAST).toFixed(1)}px rgba(60,150,255,${(.35 + .5 * BLAST).toFixed(2)})) brightness(${(1 + .08 * BLAST).toFixed(3)})`;
+  } else uw.style.display = 'none';
+  const glare = ULT > .001 ? ULT : 0;
+  $('oc').style.background = `radial-gradient(circle at ${(O[0] / W * 100).toFixed(1)}% ${(O[1] / H * 100).toFixed(1)}%, rgba(255,255,255,.85) 0, rgba(140,230,255,.5) 9%, rgba(40,100,255,.2) 30%, rgba(20,30,160,0) 62%)`;
+  $('oc').style.opacity = (OC * .45).toFixed(3);
+
+  // lightning, rebuilt every frame from the timeline hash (deterministic)
+  const pX = O[0] + (AH[0] - O[0]) * ULT + jit - rec, pY = O[1] + (AH[1] - O[1]) * ULT;
+  let s = '';
+  if (pre > .02) for (let i = 0; i < 8; i++) {                                // energy gathering into the idle hand
+    const a = hash(gq * 3 + i * 11) * TAU, d = 90 + hash(gq + i * 5) * 160, x0 = pX + Math.cos(a) * d, y0 = pY + Math.sin(a) * d;
+    const p = zig(x0, y0, pX, pY, 7, 10, gq + i * 13); s += bolt(p, 7, '#6be3ff', pre * .8) + bolt(p, 2.2, '#fff', pre);
+  }
+  if (ULT > .01 && ULT < .985) {                                                // jagged lightning ring on the wave front
+    let ring = '';
+    for (let k = 0; k <= 80; k++) { const a = k / 80 * TAU, rr = R + 14 + (hash(gq * 3 + k * 1.7) - .5) * 34; ring += `${(O[0] + Math.cos(a) * rr).toFixed(1)},${(O[1] + Math.sin(a) * rr).toFixed(1)} `; }
+    const ro = Math.min(1, ULT * 10);
+    s += bolt(ring, 16, '#4aa8ff', .6 * ro, 'filter="url(#bl)"') + bolt(ring, 6, '#6be3ff', ro) + bolt(ring, 2.4, '#fff', ro);
+  }
+  if (BLAST > .01) {
+    const reach = ss(5.4, 5.8, t);
+    for (let i = 0; i < 60; i++) {                                              // speed rays streaming out of her hand toward the viewer
+      const fwd = i % 6 !== 0, a = fwd ? BEAM_A + (hash(i * 3.7) - .5) * .9 : hash(i * 3.7) * TAU, fl = .55 + .45 * hash(gq + i * 1.3), r0 = 30 + hash(i + 4) * 70, len = (150 + hash(i + 9) * 760) * reach * fl * (fwd ? 1 : .22);
+      const dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx, w = 1.1 + hash(i + 2) * 2.8;
+      const x0 = pX + dx * r0, y0 = pY + dy * r0, len2 = dy > .05 ? Math.min(len, Math.max(0, (728 - pY) / dy - r0)) : len, x1 = pX + dx * (r0 + len2), y1 = pY + dy * (r0 + len2);
+      s += poly(`${(x0 + nx * w).toFixed(1)},${(y0 + ny * w).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)} ${(x0 - nx * w).toFixed(1)},${(y0 - ny * w).toFixed(1)}`, i % 3 ? '#cfefff' : '#fff', BLAST * (.14 + .3 * hash(i + 7)));
+    }
+    s += circ(pX, pY, (36 + 40 * reach) * pulse, '#4aa8ff', .55 * BLAST, 'filter="url(#bl)"') + circ(pX, pY, (14 + 20 * reach) * pulse, '#fff', .9 * BLAST, 'filter="url(#bl)"');
+    [-.3, -.15, 0, .15, .3].map(d => d + BEAM_A).forEach((a0, k) => {                      // bolts fanning out from the palm
+      const a = a0 + (hash(gq + k) - .5) * .12, sd = gq * 5 + k * 31, sy = Math.sin(a), len = Math.min((300 + hash(k * 7 + gq) * 260) * reach, sy > .05 ? (726 - pY) / sy : 1e9);
+      const e = [pX + Math.cos(a) * len, pY + Math.sin(a) * len], m = zig(pX, pY, e[0], e[1], 9, 5, sd);
+      s += bolt(m, 24, '#2f7bff', .5 * BLAST, 'filter="url(#bl)"') + bolt(m, 7, '#6be3ff', BLAST) + bolt(m, 2.8, '#fff', BLAST);
+      const u = .45 + hash(sd) * .2, bx = pX + (e[0] - pX) * u, by = pY + (e[1] - pY) * u, fa = a + (k % 2 ? 1 : -1) * (.25 + hash(sd + 3) * .2), fl2 = 50 + hash(sd + 5) * 60;
+      const fk = zig(bx, by, bx + Math.cos(fa) * fl2, by + Math.sin(fa) * fl2, 5, 3, sd + 11);
+      s += bolt(fk, 4, '#6be3ff', .85 * BLAST) + bolt(fk, 1.6, '#fff', BLAST);
+    });
+    [10, 530].forEach((x, i) => { const p = zig(x, -10, x + (i ? -3 : 3), 970, 34, 16, gq * 5 + i * 99); s += bolt(p, 8, '#4aa8ff', BLAST * .8) + bolt(p, 3, '#fff', BLAST); });
+  }
+  const na = Math.round(5 * CHARGE * (1 - ULT));                                // crackle over her while she charges
+  for (let i = 0; i < na; i++) {
+    const h = hash(gq * 13 + i * 5), x0 = 150 + hash(gq + i * 3) * 240, y0 = 120 + hash(gq * 2 + i * 7) * 560, a = hash(gq + i * 9) * TAU, l = 36 + hash(gq + i) * 64;
+    const p = zig(x0, y0, x0 + Math.cos(a) * l, y0 + Math.sin(a) * l, 5, 8, gq + i * 17);
+    if (h > .25) s += bolt(p, 3.6, '#6be3ff', CHARGE * .9) + bolt(p, 1.4, '#fff', CHARGE);
+  }
+
+  // the beam: a straight lightning blast out of her palm toward the viewer (drawn under her, clipped by the card and hidden behind the plate)
+  {
+    let b = '';
+    if (BLAST > .01) {
+      const reach = ss(5.4, 5.95, t), Lb = 1100 * reach, dx = Math.cos(BEAM_A), dy = Math.sin(BEAM_A), nx = -dy, ny = dx;
+      const hw = d => 16 + d * .8, P = (d, u) => [pX + dx * d + nx * u, pY + dy * d + ny * u];
+      const edge = (k, f) => { let up = '', dn = ''; for (let i = 0; i <= 14; i++) { const d = Lb * i / 14, j = (hash(gq * 2 + i * 3 + k) - .5) * 14 * (i ? 1 : 0), w = hw(d) * f + j;
+        up += P(d, w).map(v => v.toFixed(1)).join(',') + ' '; dn = P(d, -(hw(d) * f + (hash(gq * 2 + i * 5 + k + 40) - .5) * 14 * (i ? 1 : 0))).map(v => v.toFixed(1)).join(',') + ' ' + dn; } return clipRect(up + dn, -30, -30, 570, 990); };
+      b += poly(edge(1, 1.3), '#2f7bff', .6 * BLAST, 'filter="url(#bl)"') + poly(edge(2, .95), '#3a8bff', .8 * BLAST, 'filter="url(#bl)"') + poly(edge(3, .6), '#6be3ff', .95 * BLAST, 'filter="url(#bl)"') + poly(edge(4, .36), '#fff', .98 * BLAST, 'filter="url(#bl)"') + poly(edge(5, .2), '#fff', 1 * BLAST);
+      for (let i = 0; i < 34; i++) {                                              // straight streaks inside the beam
+        const u = (hash(i * 2.3 + 1) - .5) * 2 * .95, d0 = hash(i + 6) * 120, d1 = Lb * (.45 + .55 * hash(i + 11 + (gq % 3)));
+        const w = 1.2 + hash(i + 3) * 3.4, col = i % 3 === 0 ? '#fff' : i % 3 === 1 ? '#aef0ff' : '#4aa8ff', op = BLAST * (.35 + .55 * hash(i + gq * .37));
+        let pts = ''; for (let k = 0; k <= 6; k++) { const d = d0 + (d1 - d0) * k / 6; const q = P(d, u * hw(d) + (k && k < 6 ? (hash(gq + i * 9 + k) - .5) * 4 : 0)); pts += q[0].toFixed(1) + ',' + q[1].toFixed(1) + ' '; }
+        b += bolt(pts, w, col, op);
+      }
+      for (let i = 0; i < 5; i++) {                                               // a few bright straight lightning strands along it
+        const u = (i - 2) * .36 + (hash(gq + i) - .5) * .12, e = P(Lb * .9, u * hw(Lb * .9)), m = zig(pX, pY, e[0], e[1], 16, 5, gq * 3 + i * 17);
+        b += bolt(m, 7, '#6be3ff', .55 * BLAST, 'filter="url(#bl)"') + bolt(m, 2.4, '#fff', .95 * BLAST);
+      }
+      b += circ(pX, pY, 38 * pulse, '#6be3ff', .7 * BLAST, 'filter="url(#bl)"') + circ(pX, pY, 15 * pulse, '#fff', .95 * BLAST);
+    }
+    beamEl.innerHTML = b;
+  }
+  if (BLAST > .02) for (let i = 0; i < 8; i++) {                                  // crackle hugging her body
+    const q = BODY_ARC[Math.floor(hash(gq * 7 + i * 3) * BODY_ARC.length)], a = hash(gq + i * 9) * TAU, l = 22 + hash(gq + i) * 44;
+    const x0 = q[0] + (hash(gq + i * 2) - .5) * 40, y0 = q[1] + fy + (hash(gq + i * 4) - .5) * 40, p = zig(x0, y0, x0 + Math.cos(a) * l, y0 + Math.sin(a) * l, 4, 6, gq + i * 17);
+    s += bolt(p, 3.2, '#6be3ff', BLAST * .8) + bolt(p, 1.2, '#fff', BLAST);
+  }
+  fxg.innerHTML = s;
+
+  // 3D bolts: pulled in while charging, burst outward on fire (they float in front of the art)
+  const burst = ss(T.FIRE, 5.5, t) * (1 - ss(5.5, 7.4, t));
+  const k = 1 - .5 * pre + .55 * burst;
+  bolts.forEach(m => { const u = m.userData;
+    m.position.set(u.bx * k + Math.sin(TAU * t / L * u.m + u.ph) * .06, u.by * k + Math.sin(TAU * t / L * u.m * 2 + u.ph) * .08, u.bz);
+    m.rotation.set(.3 * Math.sin(TAU * t / L + u.ph), TAU * t / L * u.m * u.dir, u.tz + ENER * Math.sin(t * 25 + u.ph) * .2); });
+  const sp = sparks.pos; sparks.seed.forEach((q2, i) => { sp[i * 3] = q2.x + Math.sin(TAU * t / L * q2.k + i) * .06; sp[i * 3 + 1] = ((q2.y0 + t / L * q2.k * (1 + 2 * (BLAST > .3 ? 1 : 0))) % 1) * 3.4 - 1.5; sp[i * 3 + 2] = q2.z; });
+  sparks.g.attributes.position.needsUpdate = true;
+  camera.position.x = cx * .3; camera.position.y = -cy * .2; camera.lookAt(0, 0, 0);
+  renderer.render(scene, camera);
+
+  // ability plate
+  const a4 = [ss(0, .25, t) * (1 - ss(1.15, 1.4, t)), ss(T.Q, T.Q + .25, t) * (1 - ss(2.55, 2.8, t)), ss(T.E, T.E + .25, t) * (1 - ss(3.95, 4.2, t)), ss(T.X, T.X + .25, t) * (1 - ss(L - .25, L, t))];
+  tileEls.forEach((el, i) => el.style.setProperty('--a', a4[i].toFixed(3)));
+  if (sel !== lastSel) { lastSel = sel; const a = AB[sel]; $('dn').textContent = a.n; $('dk').textContent = a.k; $('dt').textContent = a.d; }
+  const live = ULT > .5;
+  $('du').style.display = AB[sel].ult && !live ? '' : 'none'; $('dl').style.display = live ? '' : 'none'; $('bar').style.display = live ? '' : 'none';
+  $('bar').firstElementChild.style.transform = `scaleX(${cl(1 - (t - T.FIRE) / (8.2 - T.FIRE)).toFixed(3)})`;
+  const segStart = [T.C, T.Q, T.E, T.X][sel], fade = ss(0, .2, t - segStart);
+  $('desc').style.opacity = (.35 + .65 * fade).toFixed(3); $('desc').style.transform = `translateY(${((1 - fade) * 6).toFixed(1)}px)`;
+  $('flash').style.opacity = F.toFixed(3);
+}
+window.renderAt = t => renderAt(((t % L) + L) % L, true);
+window.LOOP = L;
+
+addEventListener('resize', fit); new ResizeObserver(fit).observe(document.documentElement); fit();
+document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
+if (FROZEN !== null) { renderAt(FROZEN, true); }
+else (function loop() { let tt = (performance.now() / 1000 + offset) % L; if (tt < 0) tt += L; renderAt(tt, false); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
