@@ -434,7 +434,7 @@ window.renderAt = t => renderAt(((t % L) + L) % L, true);
 window.LOOP = L;
 
 addEventListener('resize', fit); new ResizeObserver(fit).observe(document.documentElement); fit();
-document.fonts.ready.then(() => { document.body.dataset.ready = '1'; });
+Promise.race([Promise.all([document.fonts.ready, ...[...document.images].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; }))]), new Promise(r => setTimeout(r, 3000))]).then(() => { document.body.dataset.ready = '1'; });
 if (FROZEN !== null) { renderAt(FROZEN, true); }
 else (function loop() { let tt = (performance.now() / 1000 + offset) % L; if (tt < 0) tt += L; renderAt(tt, false); requestAnimationFrame(loop); })();
 </script>

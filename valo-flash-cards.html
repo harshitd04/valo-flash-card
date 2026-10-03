@@ -49,8 +49,9 @@
   .dl a:hover { opacity: 1; border-color: var(--a); }
 
   main { position: relative; z-index: 2; flex: 1; min-height: 0; display: flex; justify-content: center; gap: 2vw; padding: 4px 24px 18px; }
-  main iframe { border: 0; background: transparent; flex: 1 1 0; min-width: 0; height: 100%; max-width: 720px; animation: in .5s cubic-bezier(.2, .8, .2, 1) both; color-scheme: normal; }
-  main iframe:nth-child(2) { animation-delay: .08s; }
+  main iframe { border: 0; background: transparent; flex: 1 1 0; min-width: 0; height: 100%; max-width: 720px; opacity: 0; color-scheme: normal; }
+  main iframe.ready { animation: in .5s cubic-bezier(.2, .8, .2, 1) both; }   /* revealed only once the card has fitted + decoded */
+  main iframe.ready:nth-child(2) { animation-delay: .08s; }
   main.two iframe:first-child { translate: 7.5% 0; } main.two iframe:last-child { translate: -7.5% 0; }   /* pulls the pair 15% closer */
   main.one iframe { max-width: 760px; }
   @keyframes in { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -63,7 +64,7 @@
     main.two { flex-direction: column; align-items: center; padding: 4px 8px 24px; }
     main.two iframe { flex: none; width: 100%; height: 92vh;  translate: none !important; }
   }
-  @media (prefers-reduced-motion: reduce) { main iframe { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { main iframe.ready { animation: none; opacity: 1; } }
 </style>
 </head>
 <body data-v="yoru">
@@ -87,7 +88,15 @@ const VIEWS = {
 };
 const stage = document.getElementById('stage'), tabs = [...document.querySelectorAll('nav button')], dl = document.getElementById('dl');
 const frame = a => { const f = document.createElement('iframe'); f.title = a + ' card'; f.setAttribute('allowtransparency', 'true');
-  f.src = `${a}.html?fit=inset&inset=.88&bare`; return f; };
+  f.src = `${a}.html?fit=inset&inset=.88&bare`;
+  // keep it hidden until the card reports ready, so the unscaled first paint is never seen
+  const reveal = () => f.classList.add('ready'), t0 = performance.now();
+  f.addEventListener('load', function poll() {
+    let ok = false;
+    try { ok = f.contentDocument.body.dataset.ready === '1'; } catch (e) { return setTimeout(reveal, 500); }
+    if (ok || performance.now() - t0 > 10000) setTimeout(reveal, 60); else setTimeout(poll, 40);
+  });
+  return f; };
 function show(v, push) {
   if (!VIEWS[v]) v = 'yoru';
   document.body.dataset.v = v;
