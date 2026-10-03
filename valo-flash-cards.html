@@ -94,7 +94,8 @@ function show(v, push) {
   tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.v === v));
   stage.replaceChildren(...VIEWS[v].map(frame));
   stage.className = VIEWS[v].length > 1 ? 'two' : 'one';
-  dl.innerHTML = VIEWS[v].map(a => `<a href="out/${a}-card-inset.gif" download>${VIEWS[v].length > 1 ? a + ' ' : ''}GIF &darr;</a>`).join('');
+  // GIFs aren't in the repo (git-ignored), so only offer them where they exist locally
+  if (/^(localhost|127\.0\.0\.1|)$/.test(location.hostname)) dl.innerHTML = VIEWS[v].map(a => `<a href="out/${a}-card-inset.gif" download>${VIEWS[v].length > 1 ? a + ' ' : ''}GIF &darr;</a>`).join('');
   if (push) history.replaceState(null, '', '#' + v);
   document.title = ({ yoru: 'Yoru', neon: 'Neon', both: 'Yoru + Neon' })[v] + ' — 3D Agent Cards';
 }
