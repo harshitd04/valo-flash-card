@@ -1,0 +1,3 @@
+﻿{
+  "rewrites": [{ "source": "/", "destination": "/valo-flash-cards.html" }]
+}
